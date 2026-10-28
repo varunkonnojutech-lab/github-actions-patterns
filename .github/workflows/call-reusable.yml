@@ -1,0 +1,25 @@
+name: Call reusable workflow
+
+# The caller side of the reusable-workflow pattern. This entire workflow
+# is one job that delegates to reusable-dotnet.yml — no steps of its own.
+# Note the path form: a reusable workflow in the same repo is referenced
+# by its file path, not by a repo name.
+#
+# Cross-repo reuse looks almost identical, except the reference names
+# the repo and a ref:
+#   uses: my-org/shared-workflows/.github/workflows/dotnet-build.yml@v1
+# Pin cross-repo callers to a tag (like @v1), never to a branch — a
+# branch moves under you, a tag does not.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-via-reusable:
+    uses: ./.github/workflows/reusable-dotnet.yml
+    with:
+      dotnet-version: "8.0.x"
+      configuration: Release
+      run-tests: true

@@ -1,0 +1,43 @@
+name: Matrix build
+
+# PATTERN: matrix builds.
+# One job definition fans out into N jobs — here, 2 operating systems x
+# 2 configurations = 4 jobs. This is how you prove "it builds everywhere"
+# without copy-pasting the job four times.
+#
+# Rules of thumb:
+# - Keep the matrix small. Every axis multiplies your job count (and your
+#   bill). 2x2 is a sweet spot for a demo; real projects often matrix
+#   over OS only, or over the .NET versions they support.
+# - Use `fail-fast: false` when you want results from every combination,
+#   even if one fails — otherwise the first failure cancels the rest and
+#   you learn less per run.
+# - Put the matrix values in `include`/`exclude` when combinations are
+#   uneven (e.g. test only on Ubuntu, build everywhere).
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        configuration: [Debug, Release]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build (${{ matrix.configuration }} on ${{ matrix.os }})
+        run: dotnet build --no-restore -c ${{ matrix.configuration }}

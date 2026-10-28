@@ -1,0 +1,63 @@
+name: Deploy to staging
+
+# PATTERN: environments + approvals.
+# This workflow only runs when someone clicks "Run workflow" by hand
+# (workflow_dispatch) — nothing automatic deploys. The deploy job targets
+# the `staging` environment, which is where the approval gate lives:
+# Settings → Environments → staging → Required reviewers.
+#
+# With required reviewers configured, the job pauses before it starts
+# and waits for a human to approve it in the Actions UI. Without that
+# configuration the job just runs — the environment name alone is not
+# a gate, the reviewers are. See docs/environments-setup.md for the
+# five-minute setup, including a production environment with a wait
+# timer and branch restrictions.
+#
+# The "deploy" step here is intentionally a placeholder (it prints what
+# would be deployed). Swap it for your real step — Azure Web App deploy,
+# azd, kubectl apply, whatever your target is — and the gate stays.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version label for this deploy (informational)"
+        required: false
+        type: string
+        default: "main"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Publish
+        run: dotnet publish src/ActionsDemo.Api -c Release -o publish
+
+      - name: Upload published app
+        uses: actions/upload-artifact@v4
+        with:
+          name: actions-demo-api
+          path: publish
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment: staging
+    steps:
+      - name: Download published app
+        uses: actions/download-artifact@v4
+        with:
+          name: actions-demo-api
+          path: publish
+
+      - name: Deploy (placeholder)
+        run: |
+          echo "Would deploy version '${{ inputs.version }}' to staging now."
+          echo "Replace this step with your real deploy: e.g. azure/webapps-deploy, azd deploy, or kubectl apply."
+          ls publish

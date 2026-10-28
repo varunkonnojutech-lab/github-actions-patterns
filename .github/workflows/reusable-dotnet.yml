@@ -1,0 +1,50 @@
+name: Reusable .NET build
+
+# PATTERN: reusable workflows.
+# This workflow never runs on its own — it only runs when another
+# workflow calls it (see call-reusable.yml). The caller passes inputs;
+# this file owns the steps. Change the build here once, and every
+# caller (and every repo that calls it, if you publish it) picks it up.
+#
+# Reusable workflows are the answer to "I copy-pasted ci.yml into five
+# repos and now they have all drifted apart." One canonical build,
+# called from everywhere.
+on:
+  workflow_call:
+    inputs:
+      dotnet-version:
+        description: ".NET SDK version to build with"
+        required: false
+        type: string
+        default: "8.0.x"
+      configuration:
+        description: "Build configuration"
+        required: false
+        type: string
+        default: "Release"
+      run-tests:
+        description: "Whether to run the test suite"
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore -c ${{ inputs.configuration }}
+
+      - name: Test
+        if: ${{ inputs.run-tests }}
+        run: dotnet test --no-build -c ${{ inputs.configuration }}
